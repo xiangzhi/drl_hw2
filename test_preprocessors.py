@@ -3,7 +3,7 @@ import time
 import unittest
 import numpy as np
 from scipy import misc
-from deeprl_hw2.preprocessors import PreprocessorSequence, HistoryPreprocessor, AtariPreprocessor
+from deeprl_hw2.preprocessors import PreprocessorSequence, HistoryPreprocessor, AtariPreprocessor,NumpyPreprocessor
 
 
 class PreprocessorsTestMethods(unittest.TestCase):
@@ -13,7 +13,8 @@ class PreprocessorsTestMethods(unittest.TestCase):
         cls.env =  gym.make("Breakout-v0")
         history_prep = HistoryPreprocessor(4)
         atari_prep = AtariPreprocessor((84,84),0,999)
-        cls.preprocessors = PreprocessorSequence([atari_prep, history_prep]) #from left to right
+        numpy_prep = NumpyPreprocessor()
+        cls.preprocessors = PreprocessorSequence([atari_prep, history_prep, numpy_prep]) #from left to right
         cls.atari_prep = atari_prep
 
     def testReward(self):
@@ -64,6 +65,13 @@ class PreprocessorsTestMethods(unittest.TestCase):
             if(i%4 == 0):
                 self.assertTrue(np.sum(mem_state - last_4_states) == 0)
 
+        new_img = np.zeros((84*2,84*2))
+        new_img[0:84,0:84] = mem_state[:,:,0]
+        new_img[0:84,84:84*2] = mem_state[:,:,1]
+        new_img[84:84*2,0:84] = mem_state[:,:,2]
+        new_img[84:84*2,84:84*2] = mem_state[:,:,3]
+        misc.imshow(new_img)
+
     def testDataSize(self):
         curr_state = self.env.reset()
         self.preprocessors.reset()
@@ -71,13 +79,6 @@ class PreprocessorsTestMethods(unittest.TestCase):
         self.assertTrue(mem_state.dtype == np.uint8)
         ori_state = self.preprocessors.process_batch(mem_state)
         self.assertTrue(ori_state.dtype == np.float32)
-
-        # new_img = np.zeros((84*2,84*2))
-        # new_img[0:84,0:84] = mem_state[:,:,0]
-        # new_img[0:84,84:84*2] = mem_state[:,:,1]
-        # new_img[84:84*2,0:84] = mem_state[:,:,2]
-        # new_img[84:84*2,84:84*2] = mem_state[:,:,3]
-        # misc.imshow(new_img)
 
     def testClone(self):
 

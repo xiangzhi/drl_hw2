@@ -7,7 +7,7 @@ from keras.layers import (Activation, Convolution2D, Dense, Flatten, Input,
 from keras.models import model_from_json
 from keras.optimizers import Adam
 
-from deeprl_hw2.preprocessors import PreprocessorSequence, HistoryPreprocessor, AtariPreprocessor
+from deeprl_hw2.preprocessors import PreprocessorSequence, HistoryPreprocessor, AtariPreprocessor, NumpyPreprocessor
 from deeprl_hw2.policy import GreedyEpsilonPolicy, UniformRandomPolicy
 from deeprl_hw2.action_replay_memory import ActionReplayMemory
 
@@ -32,8 +32,9 @@ def main():
     render = (sys.argv[4] == "y")
 
     history_prep = HistoryPreprocessor(history_size)
-    atari_prep = AtariPreprocessor(input_shape, 0, 999)
-    preprocessors = PreprocessorSequence([atari_prep, history_prep]) #from left to right
+    atari_prep = AtariPreprocessor(input_shape,0,999)
+    numpy_prep = NumpyPreprocessor()
+    preprocessors = PreprocessorSequence([atari_prep, history_prep, numpy_prep]) #from left to right
 
     if(sys.argv[5] == "y"):
         print("using random policy")

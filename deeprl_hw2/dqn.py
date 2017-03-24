@@ -376,28 +376,26 @@ class DQNAgent(object):
 
           while(max_episode_length == None or curr_episode_step <= max_episode_length):
 
-            if(frame_num%self._skip_frame == 0):
+            merge_frames = np.maximum(curr_state,last_frame)
+            processed_curr_state = self._preprocessors_eval.process_state_for_network(merge_frames)
+            #select action based on the most recent image
+            curr_action = self.select_action(processed_curr_state)
 
-              #pick action according to policy
-              merge_frames = np.maximum(curr_state,last_frame)
-              processed_curr_state = self._preprocessors_eval.process_state_for_network(merge_frames)
-              curr_action = self.select_action(processed_curr_state)
+            if(render):
+              env.render()
+            curr_episode_step += 1
 
-              #display
-              if(render):
-                env.render()
-              #time.sleep(0.5)
-              curr_episode_step += 1
-              #curr_state = next_state
-
-            #progress
-            next_state, reward, is_terminal, debug_info = env.step(curr_action)
+            #progress and step through for a fix number of steps according the skip frame number
+            for i in range(0,self._skip_frame):
+              next_state, reward, is_terminal, info = env.step(curr_action)
+              if(is_terminal):
+                break
+              last_frame = curr_state
+              curr_state = next_state
+              curr_episode_reward += reward
             if(is_terminal):
               break
-            last_frame = curr_state
-            curr_state = next_state
-            curr_episode_reward += reward
-            frame_num += 1
+
 
           #print("Episode {} ended with length:{} and reward:{}".format(episode_num, curr_episode_step, curr_episode_reward))
           reward_arr[episode_num] = curr_episode_reward

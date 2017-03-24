@@ -14,7 +14,7 @@ from keras.engine.topology import Layer as BLayer
 
 
 
-from deeprl_hw2.preprocessors import PreprocessorSequence, HistoryPreprocessor, AtariPreprocessor
+from deeprl_hw2.preprocessors import PreprocessorSequence, HistoryPreprocessor, AtariPreprocessor, NumpyPreprocessor
 from deeprl_hw2.policy import LinearDecayGreedyEpsilonPolicy, UniformRandomPolicy
 from deeprl_hw2.action_replay_memory import ActionReplayMemory
 from deeprl_hw2.objectives import huber_loss
@@ -124,7 +124,8 @@ def main():
     
     history_prep = HistoryPreprocessor(history_size)
     atari_prep = AtariPreprocessor(input_shape,0,999)
-    preprocessors = PreprocessorSequence([atari_prep, history_prep]) #from left to right
+    numpy_prep = NumpyPreprocessor()
+    preprocessors = PreprocessorSequence([atari_prep, history_prep, numpy_prep]) #from left to right
 
     policy = LinearDecayGreedyEpsilonPolicy(start_epsilon, end_epsilon,decay_steps)
 

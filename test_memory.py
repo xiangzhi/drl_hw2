@@ -48,5 +48,19 @@ class ActionMemoryTestMethods(unittest.TestCase):
 		max_size = len(memory)
 		self.assertTrue(memory._memory[max_size-1] != None)		
 
+	def test_Timing(self):
+		memory = ActionReplayMemory(100000,4)#test memory
+		index = 0
+		while(index  < 100000):
+			memory.append(index,4,5)
+			if((index+1)%50 == 0):
+				memory.end_episode(index+1,True)
+				index += 1
+			index += 1		
+		print('done')	
+		for i in range(0,10):
+			#some sampling tests
+			curr_arr, next_arr, reward_arr, action_arr, terminal_arr = memory.sample(10)
+
 if __name__ == '__main__':
 	unittest.main()

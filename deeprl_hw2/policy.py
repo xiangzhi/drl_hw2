@@ -33,6 +33,14 @@ class Policy:
         raise NotImplementedError('This method should be overriden.')
 
 
+class SamePolicy(Policy):
+    
+    def __init__(self, action):
+        self._action = action
+
+    def select_action(self, **kwargs):
+        return self._action
+
 class UniformRandomPolicy(Policy):
     """Chooses a discrete action with uniform random probability.
 

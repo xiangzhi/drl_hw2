@@ -126,3 +126,10 @@ def memory_burn_in(env, memory, preprocessors, burn_in_size, policy):
         sys.stdout.flush()
 
     print("\nfinished memory burn in")
+
+def rgb2gray(rgb):
+    #http://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python
+    r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
+    gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+
+    return gray

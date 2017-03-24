@@ -1,7 +1,6 @@
 """Suggested Preprocessors."""
 
 import numpy as np
-from PIL import Image
 
 from deeprl_hw2 import utils
 from deeprl_hw2.core import Preprocessor
@@ -33,20 +32,16 @@ class HistoryPreprocessor(Preprocessor):
     def process_state_for_network(self, state):
         """You only want history when you're deciding the current action to take."""
 
-        return self._hidden_processor(state, np.float32)
+        return self._hidden_processor(state)
 
-    def _hidden_processor(self, state, dtype):
+    def _hidden_processor(self, state):
         #push it onto the list
         self._state_buffer.appendleft(state)
-        #create a array for the output and put stuff from the buffer
-        output_arr = np.zeros((np.size(state,0),np.size(state,1),self._history_length), dtype=dtype)
-        for i in range(0, len(self._state_buffer)):
-            output_arr[:,:,i] = self._state_buffer[i]
-        #return output
-        return output_arr
+        #just return as a list
+        return list(self._state_buffer)
 
     def process_state_for_memory(self,state):
-        return self._hidden_processor(state, np.uint8)
+        return self._hidden_processor(state)
 
     def process_batch(self, samples):
         return samples
@@ -69,6 +64,30 @@ class HistoryPreprocessor(Preprocessor):
         Return an copied clean instance of itself
         """
         return HistoryPreprocessor(self._history_length)
+
+class NumpyPreprocessor(Preprocessor):
+    """
+    Converts the state into a numpy object
+    """
+    def __init__(self):
+        self._name = "numpy_preprocessor"
+
+    def process_state_for_network(self, state):
+        return self.converter(state, np.float32)
+
+    def process_state_for_memory(self, state):
+        return self.converter(state, np.uint8)
+
+    def converter(self, state, dtype):
+
+        size = len(state)
+        new_arr = np.zeros((np.size(state[0],0), np.size(state[0],1),size), dtype=dtype)
+        for i in range(0,size):
+            new_arr[:,:,i] = state[i]  
+        return new_arr
+
+    def clone(self):
+        return NumpyPreprocessor()
 
 
 class AtariPreprocessor(Preprocessor):
@@ -141,16 +160,10 @@ class AtariPreprocessor(Preprocessor):
         """
         Scale and convert to gray scale plus change to dtype
         """
-        image = Image.fromarray(state)
-        #resize image 
-        image.thumbnail(self._new_size, Image.ANTIALIAS)
-        #convert to grayscale and numpy
-        image_np = np.array(image.convert(mode='L'))
-        #convert and store
-        num_img = np.zeros(self._new_size, dtype=dtype)
-        num_img[:image_np.shape[0], :image_np.shape[1]] = image_np   
-        #return it
-        return num_img     
+        #convert from rgb to greyscale
+        image_np = utils.rgb2gray(state)
+        #resize and return
+        return (misc.imresize(image_np,self._new_size)).astype(dtype)
         
 
     def process_batch(self, samples):
