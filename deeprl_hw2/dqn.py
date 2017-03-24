@@ -79,7 +79,7 @@ class DQNAgent(object):
 
         #we make a copy of the preprocessor just for evaluation
         self._preprocessors_eval = self._preprocessors.clone()
-        self._total_duration = 60*60*10 - 60*2 #10 hours minus the last 2 minutes 
+        self._total_duration = 60*60*10 - 60*1 #10 hours minus the last 2 minutes 
 
     def add_keras_custom_layers(self, custom):
 
@@ -264,7 +264,7 @@ class DQNAgent(object):
           curr_reward = 0
           next_maxed_frame = None
 
-          last_frame = np.zeros(np.shape(curr_frame),dtype=np.uint8)
+          last_frame = np.zeros(np.shape(curr_state),dtype=np.uint8)
           mixed_frame = np.maximum(last_frame, curr_frame)
           processed_curr_state = self._preprocessors.process_state_for_memory(mixed_frame)
 
