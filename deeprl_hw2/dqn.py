@@ -251,80 +251,75 @@ class DQNAgent(object):
 
           ## Restart Variables and settings
           self._preprocessors.reset() #restart preprocessors
-          curr_state = env.reset() #restart the environment and get the start state
-          #process the current_state
-          processed_curr_state = self._preprocessors.process_state_for_memory(curr_state)
-          curr_action = 0
+          curr_frame = env.reset() #restart the environment and get the start state
           is_terminal = False
           cumulative_reward = 0
           cumulative_loss = 0
           step_num = 0 #Step number for current episode
-          update_counter = 0 #how many times the policy was updated
+
           start_time = time.time()
-          frame_number = 0
 
           #for storing over states
           curr_action = 0
           curr_reward = 0
-          last_state = np.zeros(np.shape(curr_state))
           next_maxed_frame = None
 
+          last_frame = np.zeros(np.shape(curr_frame),dtype=np.uint8)
+          mixed_frame = np.maximum(last_frame, curr_frame)
+          processed_curr_state = self._preprocessors.process_state_for_memory(mixed_frame)
 
           #Loop until the end of the episode or hit the maximum number of episodes
           while(not is_terminal or (max_episode_length != None and step_num >= max_episode_length)):
 
-            if(frame_number != 0 and frame_number%self._skip_frame == 0):
-              #get decision frames
-              #use the policy to select the action based on the state
-              curr_action = self.select_action(processed_curr_state)
-              #process the next state
-              process_next_state = self._preprocessors.process_state_for_memory(next_maxed_frame)
-              #store the state information into memory
-              self._replay_memory.insert(processed_curr_state, process_next_state, curr_action, self._preprocessors.process_reward(curr_reward), is_terminal)
 
-              #update the policy
-              training_loss = self.update_policy(total_step_num)
-              cumulative_loss += training_loss
-              update_counter += 1
+            #use the policy to select the action based on the state
+            curr_action = self.select_action(processed_curr_state)
 
+            curr_reward = 0
+            #apply the action and save the reward
+            for i in range(0, self._skip_frame):
+              last_frame = curr_frame
+              curr_frame, reward, is_terminal, debug_info = env.step(curr_action)
+              curr_reward += reward
+              if(is_terminal):
+                break
+            #generated the next state
+            mixed_frame = np.maximum(last_frame, curr_frame)
+            processed_next_state = self._preprocessors.process_state_for_memory(mixed_frame)        
 
-              #check if we should run an evaluation step and save the average reward
-              
-              if(total_step_num % self._eval_freq == 0):
-                print("\nstart performance evaluation for step:{:09d}".format(total_step_num))
-                #change policy to use the evaluation policy
-                curr_policy = self._policy
-                self._policy = eval_policy
-                #evaluate
-                avg_reward, avg_length = self.evaluate(env, self._eval_times)
-                #set back the policy
-                self._policy = curr_policy
-                #save the performance
-                self._performance_recorder.append((total_step_num, avg_reward, avg_length))
-                
+            #insert into memory
+            self._replay_memory.insert(processed_curr_state, processed_next_state, curr_action, self._preprocessors.process_reward(curr_reward), is_terminal)
 
-              if(total_step_num%self._checkin_freq == 0 or (time.time() - start_fitting_time) > self._total_duration):
-                #do checkin
-                self.save_check_point(total_step_num)
+            #update the policy
+            training_loss = self.update_policy(total_step_num)
+            cumulative_loss += training_loss
 
-              #print("curr_step:{}, picked action:{}, total_step:{}, num_itr:{}".format(step_num, action, total_step_num, num_i))
+            #check if we should run an evaluation step and save the rewards
+            if(total_step_num % self._eval_freq == 0):
+              print("\nstart performance evaluation for step:{:09d}".format(total_step_num))
+              #change policy to use the evaluation policy
+              curr_policy = self._policy
+              self._policy = eval_policy
+              #evaluate
+              avg_reward, avg_length = self.evaluate(env, self._eval_times, verbose=True)
+              #set back the policy
+              self._policy = curr_policy
+              #save the performance
+              self._performance_recorder.append((total_step_num, avg_reward, avg_length))            
 
-              ##update progress values
-              step_num += 1
-              total_step_num += 1
-              cumulative_reward += reward
-              processed_curr_state = process_next_state
+            #check if we should to a checkpoint save
+            if(total_step_num%self._checkin_freq == 0 or (time.time() - start_fitting_time) > self._total_duration):
+              #do checkin
+              self.save_check_point(total_step_num)            
 
-            #repeat the movement
-            next_state, reward, is_terminal, debug_info = env.step(curr_action)
-            curr_reward += reward
-            tmp = last_state
-            next_maxed_frame = np.maximum(last_state, next_state)
-            last_state = next_state
-            frame_number += 1
+            ##update progress values
+            step_num += 1
+            total_step_num += 1
+            cumulative_reward += curr_reward
+            processed_curr_state = processed_next_state
 
           #for tracking purposes
-          sys.stdout.write("\r{:09d} ep:{:04d}, len:{:04d}, reward:{:.4f}, loss:{:.5f}, time_per_step:{:.5f}".format(total_step_num, num_i, step_num, cumulative_reward, cumulative_loss/update_counter, (time.time() - start_time)/step_num))
+          sys.stdout.write("\r{:09d} ep:{:04d}, len:{:04d}, reward:{:.4f}, loss:{:.5f}, time_per_step:{:.5f}".format(total_step_num, num_i, step_num, cumulative_reward, cumulative_loss/step_num, (time.time() - start_time)/step_num))
           sys.stdout.flush()
           #save these generic informations, good for debugging?
           self._episodic_recorder.append((num_i,step_num,cumulative_reward,cumulative_loss))
