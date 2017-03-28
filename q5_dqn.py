@@ -10,7 +10,8 @@ from keras.optimizers import Adam
 
 from deeprl_hw2.preprocessors import PreprocessorSequence, HistoryPreprocessor, AtariPreprocessor, NumpyPreprocessor
 from deeprl_hw2.policy import LinearDecayGreedyEpsilonPolicy, UniformRandomPolicy
-from deeprl_hw2.action_replay_memory import ActionReplayMemory
+#from deeprl_hw2.action_replay_memory import ActionReplayMemory
+from deeprl_hw2.action_replay_memory_eff import ActionReplayMemoryEff as ActionReplayMemory
 from deeprl_hw2.objectives import huber_loss
 from deeprl_hw2.utils import memory_burn_in
 
@@ -22,12 +23,19 @@ def create_model(window, input_shape, num_actions,
                  model_name='q_network'):
     model = Sequential(name=model_name)
     #we using the amount as the filter
+    # model.add(Convolution2D(filters=16, kernel_size=8, strides=4, activation='relu', input_shape=(input_shape[0],input_shape[1],window)))
+    # model.add(Convolution2D(filters=32, kernel_size=4, strides=2, activation='relu'))
+    # model.add(Convolution2D(filters=64, kernel_size=3, strides=1, activation='relu'))
+    # model.add(Flatten())
+    # model.add(Dense(units=512, activation='relu'))
+    # model.add(Dense(units=num_actions, activation='linear'))
+
     model.add(Convolution2D(filters=16, kernel_size=8, strides=4, activation='relu', input_shape=(input_shape[0],input_shape[1],window)))
     model.add(Convolution2D(filters=32, kernel_size=4, strides=2, activation='relu'))
-    model.add(Convolution2D(filters=64, kernel_size=3, strides=1, activation='relu'))
     model.add(Flatten())
-    model.add(Dense(units=512, activation='relu'))
+    model.add(Dense(units=256, activation='relu'))
     model.add(Dense(units=num_actions, activation='linear'))
+
     return model
 
 def main():

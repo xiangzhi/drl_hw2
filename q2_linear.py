@@ -49,7 +49,7 @@ def main():
     input_shape = (84,84)
     batch_size = 1
     num_actions = env.action_space.n 
-    memory_size = 1
+    memory_size = 2 #2 because it need to save the current state and the future state, no matter what it gets, it will always just pick the earlier one
     memory_burn_in_num = 1
     start_epsilon = 1
     end_epsilon = 0.01

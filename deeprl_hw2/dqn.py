@@ -79,7 +79,8 @@ class DQNAgent(object):
 
         #we make a copy of the preprocessor just for evaluation
         self._preprocessors_eval = self._preprocessors.clone()
-        self._total_duration = 60*60*10 - 60*1 #10 hours minus the last 2 minutes 
+        self._max_hours = 12
+        self._total_duration = 60*60*self._max_hours - 60*1 #10 hours minus the last 2 minutes 
 
     def add_keras_custom_layers(self, custom):
 
@@ -194,7 +195,7 @@ class DQNAgent(object):
         target_q_values = np.zeros((np.size(reward_arr,0),self._action_size))
         #get the current q_values using the calculate q function
         target_q_values = self.calc_q_values(curr_state_arr)
-        #update each target
+        #update each target 
         for i, q_values in enumerate(target_q_values):
           target_q_values[i,action_arr[i]] = reward_arr[i]
           if(terminal_arr[i] == 0):
@@ -264,7 +265,7 @@ class DQNAgent(object):
           curr_reward = 0
           next_maxed_frame = None
 
-          last_frame = np.zeros(np.shape(curr_state),dtype=np.uint8)
+          last_frame = np.zeros(np.shape(curr_frame),dtype=np.uint8)
           mixed_frame = np.maximum(last_frame, curr_frame)
           processed_curr_state = self._preprocessors.process_state_for_memory(mixed_frame)
 
@@ -277,6 +278,7 @@ class DQNAgent(object):
 
             curr_reward = 0
             #apply the action and save the reward
+            #depend on how many frames we skip
             for i in range(0, self._skip_frame):
               last_frame = curr_frame
               curr_frame, reward, is_terminal, debug_info = env.step(curr_action)
