@@ -2,6 +2,7 @@
 from deeprl_hw2.core import ReplayMemory, Sample
 import numpy as np
 import sys
+import copy
 
 class ActionSample(Sample):
     """
@@ -27,6 +28,7 @@ class ActionReplayMemoryEff(ReplayMemory):
         """
         self._max_size = max_size
         self._window_length = window_length
+        self._initialized = False
         self.clear()
 
     def __len__(self):
@@ -36,6 +38,12 @@ class ActionReplayMemoryEff(ReplayMemory):
         return sys.getsizeof(self._memory)
 
     def _increment_index(self):
+
+        #special case for the ending
+        if(self._index == (self._max_size-self._window_length)):
+            for i in range(1, self._window_length):
+                self._end_buffer[self._window_length-1-i] = self._memory[self._index+i]
+
         self._filled_size = np.max([self._filled_size, (self._index+1)]) #make sure we know how many of them are there
         self._index = (self._index + 1)% self._max_size #increment the index
 
@@ -45,7 +53,7 @@ class ActionReplayMemoryEff(ReplayMemory):
             self.end_episode(next_state,is_terminal)
 
     def survey(self,index):
-        return self._memory[index]._state
+        return self._memory[index%self._filled_size]._state
 
 
     def append(self, state, action, reward):
@@ -99,14 +107,15 @@ class ActionReplayMemoryEff(ReplayMemory):
             sample_state[:,:,0] = sample_frame._state            
             for x in range(1, self._window_length):
 
-                
                 index = (i-x)
                 if(index < 0):
                     if(self._filled_size == self._max_size):
-                        index = index%self._max_size
+                        prev_sample = self._end_buffer[(index*-1)-1]
+                        #index = index%self._max_size
                     else:
                         break
-                prev_sample = self._memory[index]
+                else:
+                    prev_sample = self._memory[index]
                 if(prev_sample.is_terminal()):
                     break
                 sample_state[:,:,x] = prev_sample._state
@@ -136,5 +145,12 @@ class ActionReplayMemoryEff(ReplayMemory):
         self._filled_size = 0
         self._index = 0 
         self._state_size = None
-        self._memory = [None] * self._max_size
 
+        if(not self._initialized):
+            state = np.random.randint(0,100,(84,84))
+            _random_sample = ActionSample(state.astype(np.uint8), np.uint8(1), np.int16(1), False)
+            #for x
+            #self._memory = [_random_sample] * self._max_size
+            self._memory = [copy.deepcopy(_random_sample) for x in range(self._max_size)]
+            self._end_buffer = [_random_sample] * (self._window_length-1)
+            self._initialized = True

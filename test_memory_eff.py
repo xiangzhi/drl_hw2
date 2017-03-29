@@ -1,8 +1,11 @@
 import unittest
 
 from deeprl_hw2.action_replay_memory_eff import ActionReplayMemoryEff as ActionReplayMemory
+from deeprl_hw2.action_replay_memory import ActionReplayMemory as ActionReplayMemoryOld
 import numpy as np
 import sys
+from deeprl_hw2.preprocessors import PreprocessorSequence, HistoryPreprocessor, AtariPreprocessor,NumpyPreprocessor
+
 
 
 class ActionMemoryTestMethods(unittest.TestCase):
@@ -42,9 +45,105 @@ class ActionMemoryTestMethods(unittest.TestCase):
                 for d in range(0,4):
                     self.assertTrue(not np.all(curr_arr[i][:,:,d] == empty_arr))
 
+    def test_detail(self):
 
-            # self.assertTrue(np.sum(np.where(np.logical_and(curr_arr<750,curr_arr>1001))) == 0) #simple test to see if they are in range
+        memory = ActionReplayMemory(250,4) #test memory
+        memory_old = ActionReplayMemoryOld(250,4)
+        index = 0
 
+        h_prep = HistoryPreprocessor(4)
+        np_prep = NumpyPreprocessor()
+        preprocessors = PreprocessorSequence([h_prep, np_prep])
+
+
+        for x in range(0,1000):
+            axr = np.random.randint(0,100,(84,84))
+            prep_state = preprocessors.process_state_for_memory(axr)
+
+            memory.append(prep_state,4,5)
+            memory_old.append(prep_state,4,5)
+
+        for t in range(0,10):
+            batch_size =32
+            indexes = (np.random.randint(0, memory._filled_size, size=batch_size)).tolist()
+            curr_arr, next_arr, reward_arr, action_arr, terminal_arr = memory.sample(batch_size,indexes)
+            curr_arr2, next_arr2, reward_arr2, action_arr2, terminal_arr2 = memory_old.sample(batch_size,indexes)
+            for i,terminal in enumerate(terminal_arr):
+                empty_arr = np.zeros((84,84))
+                for d in range(0,4):
+                    self.assertTrue(not np.all(curr_arr[i][:,:,d] == empty_arr))    
+                    self.assertTrue(np.all(curr_arr[i][:,:,d] == curr_arr2[i][:,:,d])) 
+
+                if(indexes[i] >= 4):
+                    self.assertTrue(np.all(curr_arr[i][:,:,1] == memory.survey(indexes[i]-1)))        
+                    self.assertTrue(np.all(curr_arr[i][:,:,2] == memory.survey(indexes[i]-2)))        
+                    self.assertTrue(np.all(curr_arr[i][:,:,3] == memory.survey(indexes[i]-3)))
+                self.assertTrue(np.all(curr_arr[i][:,:,0] == curr_arr2[i][:,:,0])) 
+
+
+    def test_start_full(self):
+
+        memory = ActionReplayMemory(250,4) #test memory
+        memory_old = ActionReplayMemoryOld(250,4)
+        index = 0
+
+        h_prep = HistoryPreprocessor(4)
+        np_prep = NumpyPreprocessor()
+        preprocessors = PreprocessorSequence([h_prep, np_prep])
+
+
+        for x in range(0,500):
+            axr = np.random.randint(0,100,(84,84))
+            prep_state = preprocessors.process_state_for_memory(axr)
+
+            memory.append(prep_state,4,5)
+            memory_old.append(prep_state,4,5)
+
+        for t in range(0,1):
+            batch_size =32
+            indexes = [0]
+            curr_arr, next_arr, reward_arr, action_arr, terminal_arr = memory.sample(batch_size,indexes)
+            curr_arr2, next_arr2, reward_arr2, action_arr2, terminal_arr2 = memory_old.sample(batch_size,indexes)
+            for i,terminal in enumerate(terminal_arr):
+                empty_arr = np.zeros((84,84))
+                for d in range(0,4):
+                    self.assertTrue(not np.all(curr_arr[i][:,:,d] == empty_arr))           
+                    self.assertTrue(np.all(curr_arr[i][:,:,d] == curr_arr2[i][:,:,d])) 
+
+                if(indexes[i] > 4):
+                    self.assertTrue(np.all(curr_arr[i][:,:,1] == memory.survey(indexes[i]-1)))        
+                    self.assertTrue(np.all(curr_arr[i][:,:,2] == memory.survey(indexes[i]-2)))        
+                    self.assertTrue(np.all(curr_arr[i][:,:,3] == memory.survey(indexes[i]-3)))
+                    self.assertTrue(np.all(curr_arr[i][:,:,0] == curr_arr2[i][:,:,0])) 
+                self.assertTrue(np.all(curr_arr[i] == curr_arr2[i]))        
+
+    def test_empty(self):
+        memory = ActionReplayMemory(250,4) #test memory
+        memory_old = ActionReplayMemoryOld(250,4)        
+        h_prep = HistoryPreprocessor(4)
+        np_prep = NumpyPreprocessor()
+        preprocessors = PreprocessorSequence([h_prep, np_prep])
+
+        for x in range(0,100):
+            axr = np.random.randint(0,100,(84,84))
+            prep_state = preprocessors.process_state_for_memory(axr)
+            memory.append(prep_state,4,5)
+            memory_old.append(prep_state,4,5)
+
+        for t in range(0,10):
+            batch_size =32
+            indexes = (np.random.randint(0,memory._filled_size, size=batch_size)).tolist()
+            curr_arr, next_arr, reward_arr, action_arr, terminal_arr = memory.sample(batch_size,indexes)
+            curr_arr2, next_arr2, reward_arr2, action_arr2, terminal_arr2 = memory_old.sample(batch_size,indexes)
+            for i,terminal in enumerate(terminal_arr):
+                for d in range(0,4):
+                    self.assertTrue(np.all(curr_arr[i][:,:,d] == curr_arr2[i][:,:,d])) 
+
+                if(indexes[i] >= 4):
+                    self.assertTrue(np.all(curr_arr[i][:,:,1] == memory.survey(indexes[i]-1)))        
+                    self.assertTrue(np.all(curr_arr[i][:,:,2] == memory.survey(indexes[i]-2)))        
+                    self.assertTrue(np.all(curr_arr[i][:,:,3] == memory.survey(indexes[i]-3)))
+                self.assertTrue(np.all(curr_arr[i][:,:,0] == curr_arr2[i][:,:,0])) 
 
 
     # def test_memory_deprive(self):
@@ -99,15 +198,15 @@ class ActionMemoryTestMethods(unittest.TestCase):
     #         #some sampling tests
     #         curr_arr, next_arr, reward_arr, action_arr, terminal_arr = memory.sample(10)
 
-    def test_memory_x(self):
+    def test_memory(self):
         memory = ActionReplayMemory(1000000,4)
-        index = 0
-        while(index < 1000000):
-            axr = np.random.randint(0,100,(84,84,4))
-            memory.append(axr,4,5)
-            sys.stdout.write('\r{}/{}'.format(index,1000000))
-            sys.stdout.flush()
-            index += 1
+        # index = 0
+        # while(index < 100000):
+        #     axr = np.random.randint(0,100,(84,84,4))
+        #     memory.append(axr,4,5)
+        #     sys.stdout.write('\r{}/{}'.format(index,1000000))
+        #     sys.stdout.flush()
+        #     index += 1
         print(memory.size())
 
 if __name__ == '__main__':

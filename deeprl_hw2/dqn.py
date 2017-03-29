@@ -79,7 +79,7 @@ class DQNAgent(object):
 
         #we make a copy of the preprocessor just for evaluation
         self._preprocessors_eval = self._preprocessors.clone()
-        self._max_hours = 12
+        self._max_hours = 48
         self._total_duration = 60*60*self._max_hours - 60*1 #10 hours minus the last 2 minutes 
 
     def add_keras_custom_layers(self, custom):
