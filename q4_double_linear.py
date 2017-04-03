@@ -10,7 +10,8 @@ from keras.optimizers import Adam
 
 from deeprl_hw2.preprocessors import PreprocessorSequence, HistoryPreprocessor, AtariPreprocessor, NumpyPreprocessor
 from deeprl_hw2.policy import LinearDecayGreedyEpsilonPolicy, UniformRandomPolicy
-from deeprl_hw2.action_replay_memory import ActionReplayMemory
+#from deeprl_hw2.action_replay_memory import ActionReplayMemory
+from deeprl_hw2.action_replay_memory_eff import ActionReplayMemoryEff as ActionReplayMemory
 from deeprl_hw2.objectives import huber_loss
 from deeprl_hw2.utils import memory_burn_in
 
@@ -51,7 +52,7 @@ def main():
     batch_size = 32
     num_actions = env.action_space.n 
     memory_size = 1000000
-    memory_burn_in_num = 500
+    memory_burn_in_num = 50000
     start_epsilon = 1
     end_epsilon = 0.01
     decay_steps = 1000000

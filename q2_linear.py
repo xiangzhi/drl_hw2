@@ -69,7 +69,7 @@ def main():
     optimizer = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
     loss_func = huber_loss
     #linear_model.compile(optimizer, loss_func)
-
+    linear_model.summary()
     random_policy = UniformRandomPolicy(num_actions)
     #memory = ActionReplayMemory(1000000,4)
     memory = ActionReplayMemory(memory_size, history_size)
