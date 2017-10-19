@@ -73,7 +73,7 @@ class DQNAgent(object):
         self._eval_times = 20#CANNOT SET TO 0
         self._eval_freq = 10000 #how many steps before we do evaluation
         self._checkin_freq = 100000 #how often do we save the weights and do a checkin
-        self._skip_frame = 4
+        #self._skip_frame = 4
 
         self._keras_custom_layers = None
 
@@ -187,7 +187,7 @@ class DQNAgent(object):
         """
 
         #sample lists of current state, future states and reward, action from the replay memory
-        curr_state_arr, next_state_arr, reward_arr, action_arr, terminal_arr  = self._replay_memory.sample(self._batch_size)
+        curr_state_arr, next_state_arr, reward_arr, action_arr  = self._replay_memory.sample(self._batch_size)
         #process all the inputs to make sure they are in the right format
         curr_state_arr = self._preprocessors.process_batch(curr_state_arr)
         next_state_arr = self._preprocessors.process_batch(next_state_arr)
@@ -195,18 +195,15 @@ class DQNAgent(object):
         target_q_values = np.zeros((np.size(reward_arr,0),self._action_size))
         #get the current q_values using the calculate q function
         target_q_values = self.calc_q_values(curr_state_arr)
-        #update each target 
+        #update the q_value according to how well the network is doing
         for i, q_values in enumerate(target_q_values):
           target_q_values[i,action_arr[i]] = reward_arr[i]
-          if(terminal_arr[i] == 0):
-            #not terminal
-            #max_q_value = np.argmax(self.calc_q_values(np.array([next_state_arr[i]])))
+          if next_state_arr[i] is not None: #This means there is a next state, not terminal
             max_q_value = np.argmax(self._target_network.predict(np.array([next_state_arr[i]]), batch_size=1))
             target_q_values[i,action_arr[i]] = target_q_values[i,action_arr[i]] + self._gamma * max_q_value
 
         #train the network
         training_loss = self._network.train_on_batch(curr_state_arr, target_q_values)
-
 
         #check whether we want to update the target network
         if(total_step_num % self._target_update_freq == 0):
@@ -260,7 +257,7 @@ class DQNAgent(object):
 
           start_time = time.time()
 
-          #for storing over states
+          #for storing over sta_filled_sizetes
           curr_action = 0
           curr_reward = 0
           next_maxed_frame = None
@@ -275,29 +272,19 @@ class DQNAgent(object):
 
             #use the policy to select the action based on the state
             curr_action = self.select_action(processed_curr_state)
-
-            curr_reward = 0
-            #apply the action and save the reward
-            #depend on how many frames we skip
-            for i in range(0, self._skip_frame):
-              last_frame = curr_frame
-              curr_frame, reward, is_terminal, debug_info = env.step(curr_action)
-              curr_reward += reward
-              if(is_terminal):
-                break
-            #generated the next state
-            mixed_frame = np.maximum(last_frame, curr_frame)
-            processed_next_state = self._preprocessors.process_state_for_memory(mixed_frame)        
+            #execute one step
+            curr_frame, curr_reward, is_terminal, debug_info = env.step(curr_action)
+            processed_next_state = self._preprocessors.process_state_for_memory(curr_frame)        
 
             #insert into memory
-            self._replay_memory.insert(processed_curr_state, processed_next_state, curr_action, self._preprocessors.process_reward(curr_reward), is_terminal)
+            self._replay_memory.append(processed_curr_state, processed_next_state, curr_action, self._preprocessors.process_reward(curr_reward), is_terminal)
 
             #update the policy
             training_loss = self.update_policy(total_step_num)
             cumulative_loss += training_loss
 
             #check if we should run an evaluation step and save the rewards
-            if(total_step_num % self._eval_freq == 0):
+            if(total_step_num != 0 and total_step_num % self._eval_freq == 0):
               print("\nstart performance evaluation for step:{:09d}".format(total_step_num))
               #change policy to use the evaluation policy
               curr_policy = self._policy
@@ -382,16 +369,13 @@ class DQNAgent(object):
               env.render()
             curr_episode_step += 1
 
-            #progress and step through for a fix number of steps according the skip frame number
-            for i in range(0,self._skip_frame):
-              next_state, reward, is_terminal, info = env.step(curr_action)
-              if(is_terminal):
-                break
-              last_frame = curr_state
-              curr_state = next_state
-              curr_episode_reward += reward
+            next_state, reward, is_terminal, info = env.step(curr_action)
+            curr_episode_reward += reward
+            print(reward)
+            #stop running if terminate
             if(is_terminal):
               break
+
 
 
           #print("Episode {} ended with length:{} and reward:{}".format(episode_num, curr_episode_step, curr_episode_reward))

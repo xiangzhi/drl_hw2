@@ -200,7 +200,7 @@ class ReplayMemory:
     clear()
       Reset the memory. Deletes all references to the samples.
     """
-    def __init__(self, max_size, window_length):
+    def __init__(self, max_size):
         """Setup memory.
 
         You should specify the maximum size o the memory. Once the

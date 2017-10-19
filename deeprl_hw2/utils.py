@@ -114,14 +114,21 @@ def memory_burn_in(env, memory, preprocessors, burn_in_size, policy):
         action = policy.select_action(state=processed_curr_state)
         next_state, reward, is_terminal, debug_info = env.step(action)
         processed_next_state = preprocessors.process_state_for_memory(next_state)
+        
+        memory.append(processed_curr_state, processed_next_state,action, preprocessors.process_reward(reward), is_terminal)
+
         #append the current state to memory
-        memory.append(processed_curr_state, action, preprocessors.process_reward(reward))
+        #memory.append(processed_curr_state, action, preprocessors.process_reward(reward))
         if(is_terminal):
-            processed_end_state = processed_next_state
-            memory.end_episode(processed_end_state,True)
-            
+            curr_state = env.reset()
+            processed_curr_state = preprocessors.process_state_for_memory(curr_state)
+        else:
+            processed_curr_state = processed_next_state
+        
+        #memory.append(processed_curr_state, action, preprocessors.process_reward(reward))
+
         #move to next state
-        processed_curr_state = processed_next_state
+
         sys.stdout.write("\rburning in: {}/{}".format(len(memory), burn_in_size))
         sys.stdout.flush()
 

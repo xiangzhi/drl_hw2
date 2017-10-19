@@ -11,7 +11,7 @@ from keras.optimizers import Adam
 from deeprl_hw2.preprocessors import PreprocessorSequence, HistoryPreprocessor, AtariPreprocessor, NumpyPreprocessor
 from deeprl_hw2.policy import LinearDecayGreedyEpsilonPolicy, UniformRandomPolicy
 #from deeprl_hw2.action_replay_memory import ActionReplayMemory
-from deeprl_hw2.action_replay_memory_eff import ActionReplayMemoryEff as ActionReplayMemory
+from deeprl_hw2.experience_replay_memory import ExperienceReplayMemory
 from deeprl_hw2.objectives import huber_loss
 from deeprl_hw2.utils import memory_burn_in
 
@@ -86,7 +86,7 @@ def main():
 
     random_policy = UniformRandomPolicy(num_actions)
     #memory = ActionReplayMemory(1000000,4)
-    memory = ActionReplayMemory(memory_size,4)
+    memory = ExperienceReplayMemory(memory_size)
     memory_burn_in(env,memory,preprocessors,memory_burn_in_num,random_policy)
 
     #print(reward_arr)
